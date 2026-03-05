@@ -47,7 +47,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 Duration.ofMillis(refreshTokenExpiry)
         );
 
-        String redirectUrl = frontendUrl + "/oauth2/callback"
+        // Use the request's Host header to redirect back to the correct domain
+        String host = request.getHeader("Host");
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (scheme == null) scheme = request.getScheme();
+        String baseUrl = (host != null) ? scheme + "://" + host : frontendUrl;
+
+        String redirectUrl = baseUrl + "/oauth2/callback"
                 + "?accessToken=" + accessToken
                 + "&refreshToken=" + refreshToken;
 
