@@ -1,0 +1,80 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+
+const navItems = [
+  { href: "/scheduler", label: "Calendar", icon: "📅" },
+  { href: "/todos", label: "Todos", icon: "✅" },
+  { href: "/algobank", label: "AlgoBank", icon: "💻" },
+  { href: "/community", label: "Community", icon: "💬" },
+  { href: "/notifications", label: "Notifications", icon: "🔔" },
+  { href: "/profile", label: "Profile", icon: "👤" },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  return (
+    <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
+      <div className="p-6 border-b border-gray-700">
+        <Link href="/scheduler" className="text-2xl font-bold tracking-wide">
+          PEER
+        </Link>
+        <p className="text-xs text-gray-400 mt-1">Connect, Learn, Grow</p>
+      </div>
+
+      <nav className="flex-1 p-4 space-y-1">
+        {navItems.map((item) => {
+          const isActive = pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+              }`}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {user && (
+        <div className="p-4 border-t border-gray-700">
+          <div className="flex items-center gap-3 mb-3">
+            {user.profileImage ? (
+              <img
+                src={user.profileImage}
+                alt={user.name}
+                className="w-8 h-8 rounded-full"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
+                {user.name[0]}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user.name}</p>
+              <p className="text-xs text-gray-400">
+                Lv.{user.level} · {user.xp} XP
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full text-sm text-gray-400 hover:text-white transition-colors text-left"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </aside>
+  );
+}

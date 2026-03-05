@@ -3,13 +3,11 @@ name: Deploy to EC2
 on:
   push:
     branches: [main]
-    paths:
-      - 'peer-backend/**'
 
 jobs:
-  build-and-deploy:
+  deploy-backend:
+    if: contains(join(github.event.commits.*.modified, ','), 'peer-backend/') || contains(join(github.event.commits.*.added, ','), 'peer-backend/')
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,13 +30,62 @@ jobs:
           echo "$EC2_KEY" > key.pem
           chmod 400 key.pem
 
-          # Upload JAR
           scp -i key.pem -o StrictHostKeyChecking=no \
             peer-backend/target/peer-backend-0.0.1-SNAPSHOT.jar \
             ec2-user@$EC2_HOST:/opt/peer/peer-backend.jar
 
-          # Restart service
           ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST \
             "sudo systemctl restart peer"
+
+          rm -f key.pem
+
+  deploy-frontend:
+    if: contains(join(github.event.commits.*.modified, ','), 'peer-frontend/') || contains(join(github.event.commits.*.added, ','), 'peer-frontend/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: peer-frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: peer-frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://${{ secrets.EC2_HOST }}.nip.io:8080
+        run: npm run build
+
+      - name: Package standalone
+        working-directory: peer-frontend
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          mkdir -p .next/standalone/public
+          cp -r public/* .next/standalone/public/ 2>/dev/null || true
+          tar czf /tmp/peer-frontend.tar.gz -C .next/standalone .
+
+      - name: Deploy to EC2
+        env:
+          EC2_KEY: ${{ secrets.EC2_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "$EC2_KEY" > key.pem
+          chmod 400 key.pem
+
+          scp -i key.pem -o StrictHostKeyChecking=no \
+            /tmp/peer-frontend.tar.gz \
+            ec2-user@$EC2_HOST:/tmp/peer-frontend.tar.gz
+
+          ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST \
+            "sudo systemctl stop peer-frontend && \
+             rm -rf /opt/peer-frontend/* && \
+             tar xzf /tmp/peer-frontend.tar.gz -C /opt/peer-frontend && \
+             rm /tmp/peer-frontend.tar.gz && \
+             sudo systemctl start peer-frontend"
 
           rm -f key.pem
