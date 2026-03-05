@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 class ApiClient {
   private accessToken: string | null = null;
@@ -41,7 +41,11 @@ class ApiClient {
         headers["Authorization"] = `Bearer ${this.accessToken}`;
         const retry = await fetch(`${API_BASE}${path}`, { ...options, headers });
         if (!retry.ok) throw new ApiError(retry.status, await retry.text());
-        if (retry.status === 204) return undefined as T;
+        if (retry.status === 204 || retry.status === 201) {
+          const text = await retry.text();
+          if (!text) return undefined as T;
+          return JSON.parse(text);
+        }
         return retry.json();
       }
       this.setToken(null);
@@ -55,7 +59,11 @@ class ApiClient {
       throw new ApiError(res.status, body);
     }
 
-    if (res.status === 204) return undefined as T;
+    if (res.status === 204 || res.status === 201) {
+      const text = await res.text();
+      if (!text) return undefined as T;
+      return JSON.parse(text);
+    }
     return res.json();
   }
 

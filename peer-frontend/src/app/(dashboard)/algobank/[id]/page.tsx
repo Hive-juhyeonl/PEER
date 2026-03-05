@@ -26,12 +26,13 @@ export default function ProblemDetailPage() {
   const [evalTarget, setEvalTarget] = useState<number | null>(null);
   const [evaluations, setEvaluations] = useState<Record<number, Evaluation[]>>({});
   const [evalForm, setEvalForm] = useState<EvaluationRequest>({
-    readability: 3,
-    efficiency: 3,
     correctness: 3,
-    style: 3,
-    comment: "",
+    codeReadability: 3,
+    commentsClarity: 3,
+    conditionSatisfaction: 3,
+    feedback: "",
   });
+  const [expandedSolutions, setExpandedSolutions] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [editingProblem, setEditingProblem] = useState(false);
   const [editProblemForm, setEditProblemForm] = useState({ title: "", description: "", difficulty: "EASY" });
@@ -81,15 +82,31 @@ export default function ProblemDetailPage() {
   };
 
   const handleSubmitEvaluation = async (solutionId: number) => {
+    setError(null);
     try {
       await api.post(`/api/solutions/${solutionId}/evaluations`, evalForm);
-      setEvalForm({ readability: 3, efficiency: 3, correctness: 3, style: 3, comment: "" });
+      setEvalForm({ correctness: 3, codeReadability: 3, commentsClarity: 3, conditionSatisfaction: 3, feedback: "" });
       setEvalTarget(null);
       loadEvaluations(solutionId);
       api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions);
-    } catch {
-      setError("Failed to submit evaluation.");
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("DUPLICATE_EVALUATION")) {
+        setError("You have already evaluated this solution.");
+      } else if (e instanceof Error && e.message.includes("SELF_EVALUATION")) {
+        setError("You cannot evaluate your own solution.");
+      } else {
+        setError("Failed to submit evaluation.");
+      }
     }
+  };
+
+  const toggleExpand = (solId: number) => {
+    setExpandedSolutions((prev) => {
+      const next = new Set(prev);
+      if (next.has(solId)) next.delete(solId);
+      else next.add(solId);
+      return next;
+    });
   };
 
   if (!problem) return <div className="text-gray-400">Loading...</div>;
@@ -207,106 +224,161 @@ export default function ProblemDetailPage() {
               className="w-full bg-gray-800 text-white rounded-lg px-4 py-2 outline-none resize-none"
               rows={2}
             />
-            <button
-              onClick={handleSubmitSolution}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
-            >
-              Submit
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSubmitSolution}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+              >
+                Submit
+              </button>
+              <button
+                onClick={() => { setShowSolutionForm(false); setSolutionForm({ code: "", language: "java", explanation: "" }); setError(null); }}
+                className="bg-gray-700 text-white px-6 py-2 rounded-lg hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       <div className="space-y-4">
-        {solutions.map((sol) => (
-          <div key={sol.id} className="bg-gray-900 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-white">{sol.authorName}</span>
-                <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
-                  {sol.language}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => loadEvaluations(sol.id)}
-                  className="text-xs text-gray-400 hover:text-white"
-                >
-                  Reviews
-                </button>
-                {user && user.id !== sol.authorId && (
+        {solutions.map((sol) => {
+          const codeLines = sol.code.split("\n").length;
+          const isLong = codeLines > 10;
+          const isExpanded = expandedSolutions.has(sol.id);
+
+          return (
+            <div key={sol.id} className="bg-gray-900 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-white">{sol.authorName}</span>
+                  <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
+                    {sol.language}
+                  </span>
+                </div>
+                <div className="flex gap-2">
                   <button
-                    onClick={() => setEvalTarget(evalTarget === sol.id ? null : sol.id)}
-                    className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                    onClick={() => {
+                      if (evaluations[sol.id]) {
+                        setEvaluations((prev) => { const next = { ...prev }; delete next[sol.id]; return next; });
+                      } else {
+                        loadEvaluations(sol.id);
+                      }
+                    }}
+                    className="text-xs text-gray-400 hover:text-white"
                   >
-                    Evaluate
+                    Reviews {evaluations[sol.id] ? "▲" : "▼"}
+                  </button>
+                  {user && user.id !== sol.authorId && (
+                    <button
+                      onClick={() => setEvalTarget(evalTarget === sol.id ? null : sol.id)}
+                      className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                    >
+                      Evaluate
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="relative">
+                <pre
+                  className={`bg-gray-800 rounded-lg p-4 text-sm text-green-400 font-mono overflow-x-auto ${
+                    isLong && !isExpanded ? "max-h-[360px] overflow-hidden" : ""
+                  }`}
+                >
+                  {sol.code}
+                </pre>
+                {isLong && !isExpanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-800 to-transparent rounded-b-lg pointer-events-none" />
+                )}
+                {isLong && (
+                  <button
+                    onClick={() => toggleExpand(sol.id)}
+                    className="w-full mt-1 text-xs text-blue-400 hover:text-blue-300 py-1"
+                  >
+                    {isExpanded ? "Collapse" : `Show all (${codeLines} lines)`}
                   </button>
                 )}
               </div>
-            </div>
-            <pre className="bg-gray-800 rounded-lg p-4 text-sm text-green-400 font-mono overflow-x-auto">
-              {sol.code}
-            </pre>
-            {sol.explanation && (
-              <p className="text-gray-400 text-sm mt-2">{sol.explanation}</p>
-            )}
+              {sol.explanation && (
+                <p className="text-gray-400 text-sm mt-2">{sol.explanation}</p>
+              )}
 
-            {evalTarget === sol.id && (
-              <div className="mt-4 bg-gray-800 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-white mb-3">Peer Evaluation</h4>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  {(["readability", "efficiency", "correctness", "style"] as const).map(
-                    (criteria) => (
-                      <div key={criteria}>
-                        <label className="text-xs text-gray-400 capitalize">{criteria}</label>
+              {evalTarget === sol.id && (
+                <div className="mt-4 bg-gray-800 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-white mb-3">Peer Evaluation</h4>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {([
+                      ["correctness", "Correctness"],
+                      ["codeReadability", "Code Readability"],
+                      ["commentsClarity", "Comments Clarity"],
+                      ["conditionSatisfaction", "Condition Satisfaction"],
+                    ] as const).map(([key, label]) => (
+                      <div key={key}>
+                        <label className="text-xs text-gray-400">{label}</label>
                         <input
                           type="range"
                           min="1"
                           max="5"
-                          value={evalForm[criteria]}
+                          value={evalForm[key]}
                           onChange={(e) =>
-                            setEvalForm({ ...evalForm, [criteria]: Number(e.target.value) })
+                            setEvalForm({ ...evalForm, [key]: Number(e.target.value) })
                           }
                           className="w-full"
                         />
-                        <span className="text-xs text-white">{evalForm[criteria]}/5</span>
+                        <span className="text-xs text-white">{evalForm[key]}/5</span>
                       </div>
-                    )
-                  )}
-                </div>
-                <textarea
-                  placeholder="Comment (optional)"
-                  value={evalForm.comment || ""}
-                  onChange={(e) => setEvalForm({ ...evalForm, comment: e.target.value })}
-                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none resize-none"
-                  rows={2}
-                />
-                <button
-                  onClick={() => handleSubmitEvaluation(sol.id)}
-                  className="mt-2 bg-purple-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-purple-700"
-                >
-                  Submit Evaluation
-                </button>
-              </div>
-            )}
-
-            {evaluations[sol.id] && evaluations[sol.id].length > 0 && (
-              <div className="mt-4 space-y-2">
-                {evaluations[sol.id].map((ev) => (
-                  <div key={ev.id} className="bg-gray-800 rounded-lg p-3 text-sm">
-                    <div className="flex items-center gap-4 text-gray-300">
-                      <span className="font-medium">{ev.evaluatorName}</span>
-                      <span className="text-xs text-gray-500">
-                        R:{ev.readability} E:{ev.efficiency} C:{ev.correctness} S:{ev.style}
-                      </span>
-                    </div>
-                    {ev.comment && <p className="text-gray-400 mt-1">{ev.comment}</p>}
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+                  <textarea
+                    placeholder="Feedback (optional)"
+                    value={evalForm.feedback || ""}
+                    onChange={(e) => setEvalForm({ ...evalForm, feedback: e.target.value })}
+                    className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                    rows={2}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => handleSubmitEvaluation(sol.id)}
+                      className="bg-purple-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-purple-700"
+                    >
+                      Submit Evaluation
+                    </button>
+                    <button
+                      onClick={() => setEvalTarget(null)}
+                      className="bg-gray-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {evaluations[sol.id] && evaluations[sol.id].length === 0 && (
+                <div className="mt-4 text-sm text-gray-500 italic">
+                  No reviews yet — be the first to evaluate!
+                </div>
+              )}
+
+              {evaluations[sol.id] && evaluations[sol.id].length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {evaluations[sol.id].map((ev) => (
+                    <div key={ev.id} className="bg-gray-800 rounded-lg p-3 text-sm">
+                      <div className="flex items-center gap-4 text-gray-300">
+                        <span className="font-medium">{ev.evaluatorName}</span>
+                        <span className="text-xs text-gray-500">
+                          Correctness:{ev.correctness} Readability:{ev.codeReadability} Clarity:{ev.commentsClarity} Condition:{ev.conditionSatisfaction}
+                        </span>
+                        <span className="text-xs text-blue-400 ml-auto">Avg: {ev.averageScore}</span>
+                      </div>
+                      {ev.feedback && <p className="text-gray-400 mt-1">{ev.feedback}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

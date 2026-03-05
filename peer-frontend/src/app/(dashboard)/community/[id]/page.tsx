@@ -19,6 +19,7 @@ export default function PostDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
@@ -26,9 +27,13 @@ export default function PostDetailPage() {
   useEffect(() => {
     api.get<Post>(`/api/posts/${id}`).then(setPost);
     api.get<Comment[]>(`/api/posts/${id}/comments`).then(setComments);
-    // Check if already liked
     api.get<boolean>(`/api/posts/${id}/likes/check`).then(setLiked).catch(() => {});
   }, [id]);
+
+  const showMsg = (type: "success" | "error", text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleComment = async () => {
     if (!commentText.trim()) return;
@@ -60,16 +65,9 @@ export default function PostDetailPage() {
         setPost((prev) => prev && { ...prev, likeCount: prev.likeCount + 1 });
       }
     } catch {
-      // If already liked, try to unlike
-      if (!liked) {
-        try {
-          await api.delete(`/api/posts/${id}/likes`);
-          setLiked(false);
-          setPost((prev) => prev && { ...prev, likeCount: prev.likeCount - 1 });
-        } catch {
-          // ignore
-        }
-      }
+      // Re-sync state from server on error
+      api.get<boolean>(`/api/posts/${id}/likes/check`).then(setLiked).catch(() => {});
+      api.get<Post>(`/api/posts/${id}`).then(setPost).catch(() => {});
     }
   };
 
@@ -79,9 +77,17 @@ export default function PostDetailPage() {
       await api.post(`/api/posts/${id}/reports`, { reason: reportReason });
       setShowReportModal(false);
       setReportReason("");
-    } catch {
+      showMsg("success", "Report submitted successfully.");
+    } catch (e) {
       setShowReportModal(false);
       setReportReason("");
+      if (e instanceof Error && e.message.includes("DUPLICATE_REPORT")) {
+        showMsg("error", "You have already reported this post.");
+      } else if (e instanceof Error && e.message.includes("SELF_REPORT")) {
+        showMsg("error", "You cannot report your own post.");
+      } else {
+        showMsg("error", "Failed to submit report.");
+      }
     }
   };
 
@@ -112,8 +118,59 @@ export default function PostDetailPage() {
 
   const isAuthor = user && user.id === post.authorId;
 
+  const renderComment = (comment: Comment, depth: number = 0) => (
+    <div key={comment.id} className={depth > 0 ? "ml-6 mt-2" : ""}>
+      <div className={`${depth > 0 ? "bg-gray-800" : "bg-gray-900"} rounded-xl p-4`}>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-sm font-medium text-white">{comment.authorName}</span>
+          <span className="text-xs text-gray-500">
+            {new Date(comment.createdAt).toLocaleString()}
+          </span>
+        </div>
+        <p className="text-gray-300 text-sm">{comment.content}</p>
+        <button
+          onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
+          className="text-xs text-gray-500 hover:text-blue-400 mt-2"
+        >
+          Reply
+        </button>
+
+        {replyTo === comment.id && (
+          <div className="ml-6 mt-2 flex gap-2">
+            <input
+              type="text"
+              placeholder="Write a reply..."
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleReply(comment.id)}
+              className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+              autoFocus
+            />
+            <button
+              onClick={() => handleReply(comment.id)}
+              className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg"
+            >
+              Reply
+            </button>
+          </div>
+        )}
+      </div>
+      {comment.replies?.length > 0 &&
+        comment.replies.map((reply) => renderComment(reply, depth + 1))
+      }
+    </div>
+  );
+
   return (
     <div className="max-w-3xl">
+      {message && (
+        <div className={`rounded-lg px-4 py-3 mb-4 text-sm ${
+          message.type === "success" ? "bg-green-600/20 text-green-400" : "bg-red-600/20 text-red-400"
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       <div className="bg-gray-900 rounded-xl p-6 mb-6">
         {editing ? (
           <div className="space-y-3">
@@ -271,61 +328,7 @@ export default function PostDetailPage() {
         </div>
 
         <div className="space-y-3">
-          {comments.map((comment) => (
-            <div key={comment.id} className="bg-gray-900 rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm font-medium text-white">{comment.authorName}</span>
-                <span className="text-xs text-gray-500">
-                  {new Date(comment.createdAt).toLocaleString()}
-                </span>
-              </div>
-              <p className="text-gray-300 text-sm">{comment.content}</p>
-              <button
-                onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
-                className="text-xs text-gray-500 hover:text-blue-400 mt-2"
-              >
-                Reply
-              </button>
-
-              {comment.replies?.length > 0 && (
-                <div className="ml-6 mt-3 space-y-2">
-                  {comment.replies.map((reply) => (
-                    <div key={reply.id} className="bg-gray-800 rounded-lg p-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="text-sm font-medium text-gray-300">
-                          {reply.authorName}
-                        </span>
-                        <span className="text-xs text-gray-600">
-                          {new Date(reply.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="text-gray-400 text-sm">{reply.content}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {replyTo === comment.id && (
-                <div className="ml-6 mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Write a reply..."
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleReply(comment.id)}
-                    className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-600"
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => handleReply(comment.id)}
-                    className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg"
-                  >
-                    Reply
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+          {comments.map((comment) => renderComment(comment))}
         </div>
       </div>
     </div>

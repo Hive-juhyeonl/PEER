@@ -5,5 +5,8 @@ public enum NotificationType {
     TODO_DUE,
     XP_EARNED,
     LEVEL_UP,
+    COMMENT,
+    LIKE,
+    EVALUATION,
     SYSTEM
 }

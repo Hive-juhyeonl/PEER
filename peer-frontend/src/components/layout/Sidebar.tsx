@@ -25,7 +25,7 @@ export default function Sidebar() {
           <Image src="/logo.png" alt="PEER" width={48} height={28} className="rounded" />
           <div>
             <span className="text-2xl font-bold tracking-wide">PEER</span>
-            <p className="text-xs text-gray-400">Connect, Learn, Grow</p>
+            <p className="text-xs text-gray-400">Work with Peer in Life</p>
           </div>
         </Link>
       </div>
@@ -53,9 +53,9 @@ export default function Sidebar() {
       {user && (
         <div className="p-4 border-t border-gray-700">
           <div className="flex items-center gap-3 mb-3">
-            {user.profileImage ? (
+            {user.profileImageUrl ? (
               <img
-                src={user.profileImage}
+                src={user.profileImageUrl}
                 alt={user.name}
                 className="w-8 h-8 rounded-full"
               />
@@ -67,7 +67,7 @@ export default function Sidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user.name}</p>
               <p className="text-xs text-gray-400">
-                Lv.{user.level} · {user.xp} XP
+                Lv.{user.level} · {user.totalXp} XP
               </p>
             </div>
           </div>

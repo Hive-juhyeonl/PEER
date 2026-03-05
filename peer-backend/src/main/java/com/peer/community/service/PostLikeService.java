@@ -6,6 +6,8 @@ import com.peer.community.entity.Post;
 import com.peer.community.entity.PostLike;
 import com.peer.community.repository.PostLikeRepository;
 import com.peer.user.entity.User;
+import com.peer.notification.entity.NotificationType;
+import com.peer.notification.service.NotificationService;
 import com.peer.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostService postService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public boolean isLiked(Long postId, Long userId) {
         return postLikeRepository.existsByPostIdAndUserId(postId, userId);
@@ -36,6 +39,15 @@ public class PostLikeService {
 
         postLikeRepository.save(new PostLike(post, user));
         post.incrementLikeCount();
+
+        // Notify post author about the like (unless liking own post)
+        Long postAuthorId = post.getAuthor().getId();
+        if (!postAuthorId.equals(userId)) {
+            notificationService.send(postAuthorId, NotificationType.LIKE,
+                    "Someone liked your post",
+                    user.getName() + " liked \"" + post.getTitle() + "\"",
+                    post.getId());
+        }
     }
 
     @Transactional

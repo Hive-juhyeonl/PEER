@@ -4,8 +4,6 @@ import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
 function LoginContent() {
   const { user, loading, login } = useAuth();
   const router = useRouter();
@@ -27,7 +25,7 @@ function LoginContent() {
   }, [user, loading, searchParams, login, router]);
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE}/oauth2/authorization/google`;
+    window.location.href = `/oauth2/authorization/google`;
   };
 
   if (loading) {
@@ -44,10 +42,7 @@ function LoginContent() {
         <div className="text-center mb-10">
           <img src="/logo.png" alt="PEER" className="w-32 h-auto mx-auto mb-4 rounded-lg" />
           <h1 className="text-5xl font-bold text-white mb-3">PEER</h1>
-          <p className="text-gray-400 text-lg">Connect, Learn, and Grow Together</p>
-          <p className="text-gray-500 text-sm mt-2">
-            A productivity platform for Hive Helsinki students
-          </p>
+          <p className="text-gray-400 text-lg">Work with Peer in Life</p>
         </div>
 
         <div className="bg-gray-900 rounded-2xl p-8 shadow-xl">

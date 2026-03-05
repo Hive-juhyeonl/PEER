@@ -3,9 +3,9 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  profileImage: string | null;
+  profileImageUrl: string | null;
   role: "USER" | "ADMIN";
-  xp: number;
+  totalXp: number;
   level: number;
   createdAt: string;
 }
@@ -112,22 +112,23 @@ export interface SolutionRequest {
 
 export interface Evaluation {
   id: number;
-  readability: number;
-  efficiency: number;
   correctness: number;
-  style: number;
-  comment: string | null;
+  codeReadability: number;
+  commentsClarity: number;
+  conditionSatisfaction: number;
+  averageScore: number;
+  feedback: string | null;
   evaluatorId: number;
   evaluatorName: string;
   createdAt: string;
 }
 
 export interface EvaluationRequest {
-  readability: number;
-  efficiency: number;
   correctness: number;
-  style: number;
-  comment?: string;
+  codeReadability: number;
+  commentsClarity: number;
+  conditionSatisfaction: number;
+  feedback?: string;
 }
 
 // Community

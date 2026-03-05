@@ -130,9 +130,17 @@ export default function SchedulerPage() {
           <button onClick={prevMonth} className="text-gray-400 hover:text-white p-2">
             &#8592;
           </button>
-          <h2 className="text-xl font-semibold text-white">
-            {currentDate.toLocaleString("en-US", { month: "long", year: "numeric" })}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-white">
+              {currentDate.toLocaleString("en-US", { month: "long", year: "numeric" })}
+            </h2>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-gray-600 hover:text-white"
+            >
+              Today
+            </button>
+          </div>
           <button onClick={nextMonth} className="text-gray-400 hover:text-white p-2">
             &#8594;
           </button>
@@ -215,7 +223,15 @@ export default function SchedulerPage() {
                   <input
                     type="datetime-local"
                     value={form.startTime}
-                    onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const updates: Partial<EventRequest> = { startTime: newStart };
+                      if (newStart && (!form.endTime || new Date(newStart) >= new Date(form.endTime))) {
+                        const adjusted = new Date(new Date(newStart).getTime() + 60 * 60 * 1000);
+                        updates.endTime = toLocalDatetime(adjusted);
+                      }
+                      setForm({ ...form, ...updates });
+                    }}
                     className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
@@ -224,6 +240,7 @@ export default function SchedulerPage() {
                   <input
                     type="datetime-local"
                     value={form.endTime}
+                    min={form.startTime}
                     onChange={(e) => setForm({ ...form, endTime: e.target.value })}
                     className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-600"
                   />

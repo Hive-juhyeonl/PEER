@@ -8,6 +8,8 @@ import com.peer.community.entity.Comment;
 import com.peer.community.entity.Post;
 import com.peer.community.repository.CommentRepository;
 import com.peer.user.entity.User;
+import com.peer.notification.entity.NotificationType;
+import com.peer.notification.service.NotificationService;
 import com.peer.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostService postService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public List<CommentResponse> getComments(Long postId) {
         return commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtAsc(postId)
@@ -45,9 +48,9 @@ public class CommentService {
         if (request.getParentId() != null) {
             parent = commentRepository.findById(request.getParentId())
                     .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-            // 2-level threading: replies to replies are not allowed
+            // 2-level threading: if replying to a reply, attach to the root parent instead
             if (parent.getParent() != null) {
-                throw new CustomException(ErrorCode.INVALID_REPLY_DEPTH);
+                parent = parent.getParent();
             }
         }
 
@@ -58,7 +61,18 @@ public class CommentService {
                 .content(request.getContent())
                 .build();
 
-        return CommentResponse.from(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+
+        // Notify post author about new comment (unless commenting on own post)
+        Long postAuthorId = post.getAuthor().getId();
+        if (!postAuthorId.equals(userId)) {
+            notificationService.send(postAuthorId, NotificationType.COMMENT,
+                    "New comment on your post",
+                    user.getName() + " commented on \"" + post.getTitle() + "\"",
+                    post.getId());
+        }
+
+        return CommentResponse.from(saved);
     }
 
     @Transactional

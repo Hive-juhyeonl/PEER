@@ -10,7 +10,7 @@ export default function ProfilePage() {
   const xpForNextLevel = (user.level + 1) * (user.level + 1) * 10;
   const xpForCurrentLevel = user.level * user.level * 10;
   const progress =
-    ((user.xp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
+    ((user.totalXp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
 
   return (
     <div className="max-w-2xl">
@@ -18,9 +18,9 @@ export default function ProfilePage() {
 
       <div className="bg-gray-900 rounded-xl p-8">
         <div className="flex items-center gap-6 mb-8">
-          {user.profileImage ? (
+          {user.profileImageUrl ? (
             <img
-              src={user.profileImage}
+              src={user.profileImageUrl}
               alt={user.name}
               className="w-20 h-20 rounded-full"
             />
@@ -42,7 +42,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between mb-3">
             <span className="text-lg font-bold text-white">Level {user.level}</span>
             <span className="text-sm text-gray-400">
-              {user.xp} / {xpForNextLevel} XP
+              {user.totalXp} / {xpForNextLevel} XP
             </span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-3">
@@ -52,13 +52,13 @@ export default function ProfilePage() {
             />
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            {xpForNextLevel - user.xp} XP to next level
+            {xpForNextLevel - user.totalXp} XP to next level
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mt-6">
           <div className="bg-gray-800 rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold text-blue-400">{user.xp}</p>
+            <p className="text-2xl font-bold text-blue-400">{user.totalXp}</p>
             <p className="text-xs text-gray-500 mt-1">Total XP</p>
           </div>
           <div className="bg-gray-800 rounded-xl p-4 text-center">

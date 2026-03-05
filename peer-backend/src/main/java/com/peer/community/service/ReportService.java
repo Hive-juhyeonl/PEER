@@ -39,9 +39,10 @@ public class ReportService {
         reportRepository.save(new Report(reporter, post, request.getReason()));
         post.incrementReportCount();
 
-        // Auto-blind when reports exceed 10% of total users
+        // Auto-blind when reports exceed 10% of total users (minimum 3 reports)
         long totalUsers = userRepository.count();
-        if (totalUsers > 0 && post.getReportCount() >= Math.ceil(totalUsers * 0.1)) {
+        long threshold = Math.max(3, (long) Math.ceil(totalUsers * 0.1));
+        if (post.getReportCount() >= threshold) {
             post.blind();
         }
     }
