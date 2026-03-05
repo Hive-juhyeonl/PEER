@@ -1,0 +1,30 @@
+# Design documents
+PEER_설계문서.pdf
+*.설계문서.*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Maven
+target/
+
+# Java
+*.class
+*.jar
+*.war
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env.local
+
+# AWS Keys
+*.pem
+
+# Logs
+*.log

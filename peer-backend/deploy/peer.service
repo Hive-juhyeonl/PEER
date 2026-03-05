@@ -1,0 +1,17 @@
+[Unit]
+Description=PEER Backend Application
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/peer
+ExecStart=/usr/bin/java -jar -Dspring.profiles.active=prod /opt/peer/peer-backend.jar
+EnvironmentFile=/opt/peer/.env
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
