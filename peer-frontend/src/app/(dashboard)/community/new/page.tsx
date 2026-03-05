@@ -36,6 +36,7 @@ export default function NewPostPage() {
           <option value="IT_NEWS">IT News</option>
           <option value="JOB_INFO">Job Info</option>
           <option value="LEARNING">Learning</option>
+          <option value="QNA">Q&A</option>
         </select>
 
         <input

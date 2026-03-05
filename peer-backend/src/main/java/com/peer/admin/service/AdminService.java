@@ -4,6 +4,7 @@ import com.peer.common.exception.CustomException;
 import com.peer.common.exception.ErrorCode;
 import com.peer.community.dto.PostResponse;
 import com.peer.community.entity.Post;
+import com.peer.community.entity.PostTag;
 import com.peer.community.repository.PostRepository;
 import com.peer.user.dto.UserResponse;
 import com.peer.user.entity.Role;
@@ -46,6 +47,11 @@ public class AdminService {
 
     public Page<PostResponse> getReportedPosts(int page, int size) {
         return postRepository.findByReportCountGreaterThanOrderByReportCountDesc(0, PageRequest.of(page, size))
+                .map(PostResponse::from);
+    }
+
+    public Page<PostResponse> getInquiries(int page, int size) {
+        return postRepository.findByTagOrderByCreatedAtDesc(PostTag.INQUIRY, PageRequest.of(page, size))
                 .map(PostResponse::from);
     }
 

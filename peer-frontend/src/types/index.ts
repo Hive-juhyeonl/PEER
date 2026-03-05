@@ -136,7 +136,7 @@ export interface Post {
   id: number;
   title: string;
   content: string;
-  tag: "ALGORITHM" | "DEVELOPMENT" | "HOBBY" | "IT_NEWS" | "JOB_INFO" | "LEARNING" | "FREE";
+  tag: "ALGORITHM" | "DEVELOPMENT" | "HOBBY" | "IT_NEWS" | "JOB_INFO" | "LEARNING" | "FREE" | "QNA" | "INQUIRY";
   authorId: number;
   authorName: string;
   likeCount: number;

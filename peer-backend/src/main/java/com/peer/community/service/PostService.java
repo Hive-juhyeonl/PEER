@@ -29,7 +29,12 @@ public class PostService {
             return postRepository.findByTagAndBlindedFalseOrderByCreatedAtDesc(tag, pageable)
                     .map(PostResponse::from);
         }
-        return postRepository.findByBlindedFalseOrderByCreatedAtDesc(pageable)
+        return postRepository.findByBlindedFalseAndTagNotOrderByCreatedAtDesc(pageable, PostTag.INQUIRY)
+                .map(PostResponse::from);
+    }
+
+    public Page<PostResponse> getMyInquiries(Long userId, int page, int size) {
+        return postRepository.findByTagAndAuthorIdOrderByCreatedAtDesc(PostTag.INQUIRY, userId, PageRequest.of(page, size))
                 .map(PostResponse::from);
     }
 

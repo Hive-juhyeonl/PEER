@@ -13,6 +13,7 @@ const TAG_COLORS: Record<string, string> = {
   JOB_INFO: "bg-amber-600",
   LEARNING: "bg-green-600",
   FREE: "bg-gray-600",
+  QNA: "bg-orange-600",
 };
 
 const TAG_LABELS: Record<string, string> = {
@@ -23,6 +24,7 @@ const TAG_LABELS: Record<string, string> = {
   JOB_INFO: "Job Info",
   LEARNING: "Learning",
   FREE: "Free",
+  QNA: "Q&A",
 };
 
 export default function CommunityPage() {

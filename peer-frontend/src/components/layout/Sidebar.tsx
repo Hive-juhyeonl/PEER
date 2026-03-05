@@ -10,6 +10,7 @@ const navItems = [
   { href: "/todos", label: "Todos", icon: "✅" },
   { href: "/algobank", label: "AlgoBank", icon: "💻" },
   { href: "/community", label: "Community", icon: "💬" },
+  { href: "/inquiry", label: "Inquiry", icon: "📩" },
   { href: "/notifications", label: "Notifications", icon: "🔔" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];

@@ -38,6 +38,13 @@ public class AdminController {
 
     // --- Post Management ---
 
+    @GetMapping("/posts/inquiries")
+    public ResponseEntity<Page<PostResponse>> getInquiries(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(adminService.getInquiries(page, size));
+    }
+
     @GetMapping("/posts/reported")
     public ResponseEntity<Page<PostResponse>> getReportedPosts(
             @RequestParam(defaultValue = "0") int page,

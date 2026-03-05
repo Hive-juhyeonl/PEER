@@ -27,6 +27,15 @@ public class PostController {
         return ResponseEntity.ok(postService.getPosts(tag, page, size));
     }
 
+    @GetMapping("/inquiries")
+    public ResponseEntity<Page<PostResponse>> getMyInquiries(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(postService.getMyInquiries(userId, page, size));
+    }
+
     @GetMapping("/{postId}")
     public ResponseEntity<PostResponse> getPost(@PathVariable Long postId) {
         return ResponseEntity.ok(postService.getPost(postId));

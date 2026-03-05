@@ -7,5 +7,7 @@ public enum PostTag {
     IT_NEWS,
     JOB_INFO,
     LEARNING,
-    FREE
+    FREE,
+    QNA,
+    INQUIRY
 }

@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { User, Post, Page } from "@/types";
 
-type Tab = "users" | "reported" | "blinded";
+type Tab = "users" | "inquiries" | "reported" | "blinded";
 
 export default function AdminPage() {
   const { user, loading } = useAuth();
@@ -21,6 +21,9 @@ export default function AdminPage() {
   const [reportedTotalPages, setReportedTotalPages] = useState(0);
   const [blindedPage, setBlindedPage] = useState(0);
   const [blindedTotalPages, setBlindedTotalPages] = useState(0);
+  const [inquiries, setInquiries] = useState<Post[]>([]);
+  const [inquiryPage, setInquiryPage] = useState(0);
+  const [inquiryTotalPages, setInquiryTotalPages] = useState(0);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "ADMIN")) {
@@ -42,6 +45,13 @@ export default function AdminPage() {
     });
   };
 
+  const fetchInquiries = (p: number) => {
+    api.get<Page<Post>>(`/api/admin/posts/inquiries?page=${p}&size=20`).then((data) => {
+      setInquiries(data.content);
+      setInquiryTotalPages(data.totalPages);
+    });
+  };
+
   const fetchBlinded = (p: number) => {
     api.get<Page<Post>>(`/api/admin/posts/blinded?page=${p}&size=20`).then((data) => {
       setBlindedPosts(data.content);
@@ -60,6 +70,12 @@ export default function AdminPage() {
       fetchReported(reportedPage);
     }
   }, [reportedPage, user]);
+
+  useEffect(() => {
+    if (user?.role === "ADMIN") {
+      fetchInquiries(inquiryPage);
+    }
+  }, [inquiryPage, user]);
 
   useEffect(() => {
     if (user?.role === "ADMIN") {
@@ -96,6 +112,7 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "users", label: "Users" },
+    { key: "inquiries", label: "Inquiries" },
     { key: "reported", label: "Reported Posts" },
     { key: "blinded", label: "Blinded Posts" },
   ];
@@ -181,6 +198,31 @@ export default function AdminPage() {
             </table>
           </div>
           <Pagination page={userPage} totalPages={userTotalPages} onPageChange={setUserPage} />
+        </div>
+      )}
+
+      {tab === "inquiries" && (
+        <div>
+          <div className="space-y-3">
+            {inquiries.map((post) => (
+              <div key={post.id} className="bg-gray-900 rounded-xl p-5">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-xs px-2 py-0.5 rounded bg-blue-600/20 text-blue-400">
+                    {post.authorName}
+                  </span>
+                  <h3 className="text-lg font-semibold text-white">{post.title}</h3>
+                </div>
+                <p className="text-gray-400 text-sm whitespace-pre-wrap">{post.content}</p>
+                <div className="text-xs text-gray-500 mt-3">
+                  {new Date(post.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+            {inquiries.length === 0 && (
+              <div className="text-center text-gray-500 py-12">No inquiries.</div>
+            )}
+          </div>
+          <Pagination page={inquiryPage} totalPages={inquiryTotalPages} onPageChange={setInquiryPage} />
         </div>
       )}
 

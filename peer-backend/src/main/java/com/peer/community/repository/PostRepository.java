@@ -8,9 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    Page<Post> findByBlindedFalseOrderByCreatedAtDesc(Pageable pageable);
+    Page<Post> findByBlindedFalseAndTagNotOrderByCreatedAtDesc(Pageable pageable, PostTag excludeTag);
 
     Page<Post> findByTagAndBlindedFalseOrderByCreatedAtDesc(PostTag tag, Pageable pageable);
+
+    Page<Post> findByTagAndAuthorIdOrderByCreatedAtDesc(PostTag tag, Long authorId, Pageable pageable);
+
+    Page<Post> findByTagOrderByCreatedAtDesc(PostTag tag, Pageable pageable);
 
     Page<Post> findByReportCountGreaterThanOrderByReportCountDesc(int minReports, Pageable pageable);
 
