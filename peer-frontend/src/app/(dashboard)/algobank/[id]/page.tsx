@@ -21,7 +21,7 @@ export default function ProblemDetailPage() {
   const [solutionForm, setSolutionForm] = useState<SolutionRequest>({
     code: "",
     language: "java",
-    description: "",
+    explanation: "",
   });
   const [evalTarget, setEvalTarget] = useState<number | null>(null);
   const [evaluations, setEvaluations] = useState<Record<number, Evaluation[]>>({});
@@ -32,18 +32,47 @@ export default function ProblemDetailPage() {
     style: 3,
     comment: "",
   });
+  const [error, setError] = useState<string | null>(null);
+  const [editingProblem, setEditingProblem] = useState(false);
+  const [editProblemForm, setEditProblemForm] = useState({ title: "", description: "", difficulty: "EASY" });
 
   useEffect(() => {
-    api.get<Problem>(`/api/problems/${id}`).then(setProblem);
-    api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions);
+    api.get<Problem>(`/api/problems/${id}`).then(setProblem).catch(() => {});
+    api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions).catch(() => {});
   }, [id]);
+
+  const startEditingProblem = () => {
+    if (!problem) return;
+    setEditProblemForm({ title: problem.title, description: problem.description, difficulty: problem.difficulty });
+    setEditingProblem(true);
+  };
+
+  const handleEditProblem = async () => {
+    if (!editProblemForm.title.trim() || !editProblemForm.description.trim()) return;
+    try {
+      const updated = await api.put<Problem>(`/api/problems/${id}`, editProblemForm);
+      setProblem(updated);
+      setEditingProblem(false);
+    } catch {
+      setError("Failed to update problem.");
+    }
+  };
 
   const handleSubmitSolution = async () => {
     if (!solutionForm.code) return;
-    await api.post(`/api/problems/${id}/solutions`, solutionForm);
-    setSolutionForm({ code: "", language: "java", description: "" });
-    setShowSolutionForm(false);
-    api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions);
+    setError(null);
+    try {
+      await api.post(`/api/problems/${id}/solutions`, solutionForm);
+      setSolutionForm({ code: "", language: "java", explanation: "" });
+      setShowSolutionForm(false);
+      api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions);
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("DUPLICATE_SOLUTION")) {
+        setError("You have already submitted a solution for this problem.");
+      } else {
+        setError("Failed to submit solution. Please try again.");
+      }
+    }
   };
 
   const loadEvaluations = async (solutionId: number) => {
@@ -52,11 +81,15 @@ export default function ProblemDetailPage() {
   };
 
   const handleSubmitEvaluation = async (solutionId: number) => {
-    await api.post(`/api/solutions/${solutionId}/evaluations`, evalForm);
-    setEvalForm({ readability: 3, efficiency: 3, correctness: 3, style: 3, comment: "" });
-    setEvalTarget(null);
-    loadEvaluations(solutionId);
-    api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions);
+    try {
+      await api.post(`/api/solutions/${solutionId}/evaluations`, evalForm);
+      setEvalForm({ readability: 3, efficiency: 3, correctness: 3, style: 3, comment: "" });
+      setEvalTarget(null);
+      loadEvaluations(solutionId);
+      api.get<Solution[]>(`/api/problems/${id}/solutions`).then(setSolutions);
+    } catch {
+      setError("Failed to submit evaluation.");
+    }
   };
 
   if (!problem) return <div className="text-gray-400">Loading...</div>;
@@ -64,24 +97,69 @@ export default function ProblemDetailPage() {
   return (
     <div>
       <div className="bg-gray-900 rounded-xl p-6 mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <span
-            className={`text-xs px-2 py-1 rounded text-white font-medium ${
-              DIFFICULTY_COLORS[problem.difficulty]
-            }`}
-          >
-            {problem.difficulty}
-          </span>
-          <h1 className="text-2xl font-bold text-white">{problem.title}</h1>
-        </div>
-        <pre className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
-          {problem.description}
-        </pre>
-        <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
-          <span>by {problem.authorName}</span>
-          <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
-        </div>
+        {editingProblem ? (
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <select
+                value={editProblemForm.difficulty}
+                onChange={(e) => setEditProblemForm({ ...editProblemForm, difficulty: e.target.value })}
+                className="bg-gray-800 text-white rounded-lg px-3 py-2 outline-none"
+              >
+                <option value="EASY">Easy</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HARD">Hard</option>
+              </select>
+              <input
+                type="text"
+                value={editProblemForm.title}
+                onChange={(e) => setEditProblemForm({ ...editProblemForm, title: e.target.value })}
+                className="flex-1 bg-gray-800 text-white text-xl font-bold rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <textarea
+              value={editProblemForm.description}
+              onChange={(e) => setEditProblemForm({ ...editProblemForm, description: e.target.value })}
+              className="w-full bg-gray-800 text-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-600 resize-none font-mono text-sm"
+              rows={10}
+            />
+            <div className="flex gap-2">
+              <button onClick={handleEditProblem} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">Save</button>
+              <button onClick={() => setEditingProblem(false)} className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 text-sm">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-3">
+              <span
+                className={`text-xs px-2 py-1 rounded text-white font-medium ${
+                  DIFFICULTY_COLORS[problem.difficulty]
+                }`}
+              >
+                {problem.difficulty}
+              </span>
+              <h1 className="text-2xl font-bold text-white">{problem.title}</h1>
+            </div>
+            <pre className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">
+              {problem.description}
+            </pre>
+            <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
+              <span>by {problem.authorName}</span>
+              <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
+              {user && user.id === problem.authorId && (
+                <button onClick={startEditingProblem} className="text-gray-500 hover:text-blue-400 ml-auto">
+                  Edit
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
+
+      {error && (
+        <div className="bg-red-600/20 text-red-400 rounded-lg px-4 py-3 mb-4 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-white">
@@ -121,10 +199,10 @@ export default function ProblemDetailPage() {
               rows={12}
             />
             <textarea
-              placeholder="Description (optional)"
-              value={solutionForm.description || ""}
+              placeholder="Explanation (optional)"
+              value={solutionForm.explanation || ""}
               onChange={(e) =>
-                setSolutionForm({ ...solutionForm, description: e.target.value })
+                setSolutionForm({ ...solutionForm, explanation: e.target.value })
               }
               className="w-full bg-gray-800 text-white rounded-lg px-4 py-2 outline-none resize-none"
               rows={2}
@@ -148,11 +226,6 @@ export default function ProblemDetailPage() {
                 <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
                   {sol.language}
                 </span>
-                {sol.averageScore !== null && (
-                  <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-0.5 rounded">
-                    Score: {sol.averageScore.toFixed(1)}/5.0
-                  </span>
-                )}
               </div>
               <div className="flex gap-2">
                 <button
@@ -174,8 +247,8 @@ export default function ProblemDetailPage() {
             <pre className="bg-gray-800 rounded-lg p-4 text-sm text-green-400 font-mono overflow-x-auto">
               {sol.code}
             </pre>
-            {sol.description && (
-              <p className="text-gray-400 text-sm mt-2">{sol.description}</p>
+            {sol.explanation && (
+              <p className="text-gray-400 text-sm mt-2">{sol.explanation}</p>
             )}
 
             {evalTarget === sol.id && (

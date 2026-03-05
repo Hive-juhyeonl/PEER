@@ -13,6 +13,14 @@ public class PostLikeController {
 
     private final PostLikeService postLikeService;
 
+    @GetMapping("/check")
+    public ResponseEntity<Boolean> checkLiked(
+            Authentication authentication,
+            @PathVariable Long postId) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(postLikeService.isLiked(postId, userId));
+    }
+
     @PostMapping
     public ResponseEntity<Void> like(
             Authentication authentication,

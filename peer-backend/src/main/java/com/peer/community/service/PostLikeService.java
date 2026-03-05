@@ -20,6 +20,10 @@ public class PostLikeService {
     private final PostService postService;
     private final UserRepository userRepository;
 
+    public boolean isLiked(Long postId, Long userId) {
+        return postLikeRepository.existsByPostIdAndUserId(postId, userId);
+    }
+
     @Transactional
     public void like(Long postId, Long userId) {
         if (postLikeRepository.existsByPostIdAndUserId(postId, userId)) {

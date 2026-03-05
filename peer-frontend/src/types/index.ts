@@ -92,19 +92,22 @@ export interface ProblemRequest {
 
 export interface Solution {
   id: number;
+  problemId: number;
   code: string;
   language: string;
-  description: string | null;
+  explanation: string | null;
+  timeComplexity: string | null;
+  spaceComplexity: string | null;
+  githubUrl: string | null;
   authorId: number;
   authorName: string;
-  averageScore: number | null;
   createdAt: string;
 }
 
 export interface SolutionRequest {
   code: string;
   language: string;
-  description?: string;
+  explanation?: string;
 }
 
 export interface Evaluation {

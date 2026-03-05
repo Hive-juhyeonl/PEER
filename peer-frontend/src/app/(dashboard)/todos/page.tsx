@@ -4,12 +4,21 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Todo, TodoRequest } from "@/types";
 
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<string, string> = {
   LOW: "bg-gray-600",
   MEDIUM: "bg-blue-600",
   HIGH: "bg-orange-500",
   URGENT: "bg-red-600",
 };
+
+const PRIORITY_ORDER: Record<string, number> = {
+  URGENT: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
+type FilterType = "ALL" | "ACTIVE" | "COMPLETED" | "URGENT" | "HIGH" | "MEDIUM" | "LOW";
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -19,6 +28,7 @@ export default function TodosPage() {
   const [dueDate, setDueDate] = useState("");
   const [subtaskParentId, setSubtaskParentId] = useState<number | null>(null);
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [filter, setFilter] = useState<FilterType>("ALL");
 
   const fetchTodos = () => {
     api.get<Todo[]>("/api/todos").then(setTodos).catch(() => {});
@@ -60,9 +70,29 @@ export default function TodosPage() {
 
   const completedCount = todos.filter((t) => t.completed).length;
 
+  const filteredTodos = todos
+    .filter((todo) => {
+      if (filter === "ACTIVE") return !todo.completed;
+      if (filter === "COMPLETED") return todo.completed;
+      if (filter === "URGENT" || filter === "HIGH" || filter === "MEDIUM" || filter === "LOW")
+        return todo.priority === filter;
+      return true;
+    })
+    .sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9));
+
+  const filterButtons: { label: string; value: FilterType }[] = [
+    { label: "All", value: "ALL" },
+    { label: "Active", value: "ACTIVE" },
+    { label: "Completed", value: "COMPLETED" },
+    { label: "Urgent", value: "URGENT" },
+    { label: "High", value: "HIGH" },
+    { label: "Medium", value: "MEDIUM" },
+    { label: "Low", value: "LOW" },
+  ];
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Todos</h1>
           <p className="text-gray-400 text-sm mt-1">
@@ -75,6 +105,22 @@ export default function TodosPage() {
         >
           + New Todo
         </button>
+      </div>
+
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {filterButtons.map((fb) => (
+          <button
+            key={fb.value}
+            onClick={() => setFilter(fb.value)}
+            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+              filter === fb.value
+                ? "bg-blue-600 text-white"
+                : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            {fb.label}
+          </button>
+        ))}
       </div>
 
       {showForm && (
@@ -116,7 +162,7 @@ export default function TodosPage() {
       )}
 
       <div className="space-y-2">
-        {todos.map((todo) => (
+        {filteredTodos.map((todo) => (
           <div key={todo.id} className="bg-gray-900 rounded-xl p-4">
             <div className="flex items-center gap-3">
               <button
@@ -226,9 +272,11 @@ export default function TodosPage() {
           </div>
         ))}
 
-        {todos.length === 0 && (
+        {filteredTodos.length === 0 && (
           <div className="text-center text-gray-500 py-12">
-            No todos yet. Create one to get started!
+            {todos.length === 0
+              ? "No todos yet. Create one to get started!"
+              : "No todos match this filter."}
           </div>
         )}
       </div>

@@ -81,6 +81,11 @@ export default function SchedulerPage() {
 
   const handleSubmit = async () => {
     if (!form.title || !form.startTime || !form.endTime) return;
+    if (new Date(form.startTime) >= new Date(form.endTime)) {
+      const adjusted = new Date(new Date(form.startTime).getTime() + 60 * 60 * 1000);
+      setForm({ ...form, endTime: toLocalDatetime(adjusted) });
+      return;
+    }
     const body = {
       ...form,
       startTime: new Date(form.startTime).toISOString(),
