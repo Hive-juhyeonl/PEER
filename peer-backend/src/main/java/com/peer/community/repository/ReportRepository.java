@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
     boolean existsByReporterIdAndPostId(Long reporterId, Long postId);
+
+    java.util.List<Report> findByPostIdOrderByCreatedAtDesc(Long postId);
 }

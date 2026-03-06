@@ -139,10 +139,12 @@ export interface Post {
   tag: "ALGORITHM" | "DEVELOPMENT" | "HOBBY" | "IT_NEWS" | "JOB_INFO" | "LEARNING" | "FREE" | "QNA" | "INQUIRY";
   authorId: number;
   authorName: string;
+  authorProfileImageUrl: string | null;
   likeCount: number;
   viewCount: number;
   reportCount: number;
   blinded: boolean;
+  resolved: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -158,6 +160,7 @@ export interface Comment {
   content: string;
   authorId: number;
   authorName: string;
+  authorProfileImageUrl: string | null;
   replies: Comment[];
   createdAt: string;
 }

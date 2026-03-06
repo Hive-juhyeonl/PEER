@@ -14,6 +14,7 @@ public class CommentResponse {
     private Long id;
     private Long authorId;
     private String authorName;
+    private String authorProfileImageUrl;
     private String content;
     private Long parentId;
     private List<CommentResponse> replies;
@@ -25,6 +26,7 @@ public class CommentResponse {
                 .id(comment.getId())
                 .authorId(comment.getAuthor().getId())
                 .authorName(comment.getAuthor().getName())
+                .authorProfileImageUrl(comment.getAuthor().getProfileImageUrl())
                 .content(comment.getContent())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .replies(comment.getReplies().stream()

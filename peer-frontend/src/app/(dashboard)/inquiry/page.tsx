@@ -79,15 +79,15 @@ export default function InquiryPage() {
         {inquiries.map((inquiry) => (
           <Link
             key={inquiry.id}
-            href={`/community/${inquiry.id}`}
+            href={`/community/${inquiry.id}?from=inquiry`}
             className="block bg-gray-900 rounded-xl p-5 hover:bg-gray-800 transition-colors"
           >
             <h3 className="text-lg font-semibold text-white mb-1">{inquiry.title}</h3>
             <p className="text-gray-400 text-sm line-clamp-2">{inquiry.content}</p>
             <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
               <span>{new Date(inquiry.createdAt).toLocaleDateString()}</span>
-              <span className="text-blue-400">
-                {inquiry.likeCount > 0 ? "Replied" : "Pending"}
+              <span className={inquiry.resolved ? "text-green-400" : "text-yellow-400"}>
+                {inquiry.resolved ? "Resolved" : "Pending"}
               </span>
             </div>
           </Link>

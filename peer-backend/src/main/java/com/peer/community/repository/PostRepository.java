@@ -16,6 +16,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findByTagOrderByCreatedAtDesc(PostTag tag, Pageable pageable);
 
+    Page<Post> findByTagAndResolvedOrderByCreatedAtDesc(PostTag tag, boolean resolved, Pageable pageable);
+
     Page<Post> findByReportCountGreaterThanOrderByReportCountDesc(int minReports, Pageable pageable);
 
     Page<Post> findByBlindedTrueOrderByCreatedAtDesc(Pageable pageable);

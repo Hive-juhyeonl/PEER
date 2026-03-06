@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Post, Comment, CommentRequest } from "@/types";
@@ -10,6 +10,8 @@ export default function PostDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromInquiry = searchParams.get("from") === "inquiry";
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -111,7 +113,7 @@ export default function PostDetailPage() {
 
   const handleDelete = async () => {
     await api.delete(`/api/posts/${id}`);
-    router.push("/community");
+    router.push(fromInquiry ? "/inquiry" : "/community");
   };
 
   if (!post) return <div className="text-gray-400">Loading...</div>;
@@ -123,20 +125,27 @@ export default function PostDetailPage() {
     <div key={comment.id} className={depth > 0 ? "ml-6 mt-2" : ""}>
       <div className={`${depth > 0 ? "bg-gray-800" : "bg-gray-900"} rounded-xl p-4`}>
         <div className="flex items-center gap-3 mb-2">
+          {comment.authorProfileImageUrl ? (
+            <img src={comment.authorProfileImageUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+          ) : (
+            <span className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white">{comment.authorName[0]}</span>
+          )}
           <span className="text-sm font-medium text-white">{comment.authorName}</span>
           <span className="text-xs text-gray-500">
             {new Date(comment.createdAt).toLocaleString()}
           </span>
         </div>
         <p className="text-gray-300 text-sm">{comment.content}</p>
-        <button
-          onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
-          className="text-xs text-gray-500 hover:text-blue-400 mt-2"
-        >
-          Reply
-        </button>
+        {!(post.tag === "INQUIRY" && post.resolved) && (
+          <button
+            onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
+            className="text-xs text-gray-500 hover:text-blue-400 mt-2"
+          >
+            Reply
+          </button>
+        )}
 
-        {replyTo === comment.id && (
+        {replyTo === comment.id && !(post.tag === "INQUIRY" && post.resolved) && (
           <div className="ml-6 mt-2 flex gap-2">
             <input
               type="text"
@@ -206,7 +215,14 @@ export default function PostDetailPage() {
           <>
             <h1 className="text-2xl font-bold text-white mb-2">{post.title}</h1>
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-              <span>{post.authorName}</span>
+              <span className="flex items-center gap-2">
+                {post.authorProfileImageUrl ? (
+                  <img src={post.authorProfileImageUrl} alt="" className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <span className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">{post.authorName[0]}</span>
+                )}
+                {post.authorName}
+              </span>
               <span>{new Date(post.createdAt).toLocaleString()}</span>
             </div>
             <div className="text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -233,7 +249,7 @@ export default function PostDetailPage() {
               Report
             </button>
           )}
-          {isAuthor && !editing && (
+          {isAuthor && !editing && post.tag !== "INQUIRY" && (
             <button
               onClick={startEditing}
               className="text-xs text-gray-500 hover:text-blue-400 ml-auto"
@@ -311,22 +327,26 @@ export default function PostDetailPage() {
         <h2 className="text-lg font-bold text-white mb-4">
           Comments ({comments.length})
         </h2>
-        <div className="flex gap-3 mb-4">
-          <input
-            type="text"
-            placeholder="Write a comment..."
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleComment()}
-            className="flex-1 bg-gray-900 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-600"
-          />
-          <button
-            onClick={handleComment}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Post
-          </button>
-        </div>
+        {post.tag === "INQUIRY" && post.resolved ? (
+          <p className="text-gray-500 text-sm mb-4">This inquiry has been resolved. No further comments can be added.</p>
+        ) : (
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Write a comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleComment()}
+              className="flex-1 bg-gray-900 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-600"
+            />
+            <button
+              onClick={handleComment}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Post
+            </button>
+          </div>
+        )}
 
         <div className="space-y-3">
           {comments.map((comment) => renderComment(comment))}

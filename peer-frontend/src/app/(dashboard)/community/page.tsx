@@ -104,7 +104,14 @@ export default function CommunityPage() {
             </div>
             <p className="text-gray-400 text-sm line-clamp-2">{post.content}</p>
             <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-              <span>{post.authorName}</span>
+              <span className="flex items-center gap-1.5">
+                {post.authorProfileImageUrl ? (
+                  <img src={post.authorProfileImageUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                ) : (
+                  <span className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white">{post.authorName[0]}</span>
+                )}
+                {post.authorName}
+              </span>
               <span>{new Date(post.createdAt).toLocaleDateString()}</span>
               <span>&#9829; {post.likeCount}</span>
               <span>Views {post.viewCount}</span>

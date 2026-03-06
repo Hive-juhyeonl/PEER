@@ -44,6 +44,9 @@ public class Post extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean blinded;
 
+    @Column(nullable = false)
+    private boolean resolved;
+
     @Builder
     public Post(User author, PostTag tag, String title, String content) {
         this.author = author;
@@ -54,6 +57,7 @@ public class Post extends BaseTimeEntity {
         this.reportCount = 0;
         this.viewCount = 0;
         this.blinded = false;
+        this.resolved = false;
     }
 
     public void incrementViewCount() {
@@ -87,5 +91,13 @@ public class Post extends BaseTimeEntity {
     public void unblind() {
         this.blinded = false;
         this.reportCount = 0;
+    }
+
+    public void resolve() {
+        this.resolved = true;
+    }
+
+    public void unresolve() {
+        this.resolved = false;
     }
 }

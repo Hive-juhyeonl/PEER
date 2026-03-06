@@ -2,7 +2,9 @@ package com.peer.admin.controller;
 
 import com.peer.admin.service.AdminService;
 import com.peer.community.dto.PostResponse;
+import com.peer.community.dto.ReportResponse;
 import com.peer.user.dto.UserResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -36,13 +38,30 @@ public class AdminController {
         return ResponseEntity.ok(adminService.demoteToUser(userId));
     }
 
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+        adminService.deleteUser(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     // --- Post Management ---
 
     @GetMapping("/posts/inquiries")
     public ResponseEntity<Page<PostResponse>> getInquiries(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(adminService.getInquiries(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Boolean resolved) {
+        return ResponseEntity.ok(adminService.getInquiries(page, size, resolved));
+    }
+
+    @PatchMapping("/posts/{postId}/resolve")
+    public ResponseEntity<PostResponse> resolveInquiry(@PathVariable Long postId) {
+        return ResponseEntity.ok(adminService.resolveInquiry(postId));
+    }
+
+    @PatchMapping("/posts/{postId}/unresolve")
+    public ResponseEntity<PostResponse> unresolveInquiry(@PathVariable Long postId) {
+        return ResponseEntity.ok(adminService.unresolveInquiry(postId));
     }
 
     @GetMapping("/posts/reported")
@@ -68,5 +87,10 @@ public class AdminController {
     public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
         adminService.deletePost(postId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/posts/{postId}/reports")
+    public ResponseEntity<List<ReportResponse>> getReportsForPost(@PathVariable Long postId) {
+        return ResponseEntity.ok(adminService.getReportsForPost(postId));
     }
 }

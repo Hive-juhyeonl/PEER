@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
@@ -19,7 +19,9 @@ const adminNavItem = { href: "/admin", label: "Admin", icon: "🛡️" };
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, logout } = useAuth();
+  const fromInquiry = searchParams.get("from") === "inquiry";
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
@@ -35,7 +37,9 @@ export default function Sidebar() {
 
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          let isActive = pathname.startsWith(item.href);
+          if (item.href === "/community" && fromInquiry) isActive = false;
+          if (item.href === "/inquiry" && fromInquiry && pathname.startsWith("/community/")) isActive = true;
           return (
             <Link
               key={item.href}
