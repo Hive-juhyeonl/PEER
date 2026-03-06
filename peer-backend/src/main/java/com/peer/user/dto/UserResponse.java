@@ -4,6 +4,8 @@ import com.peer.user.entity.User;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 public class UserResponse {
@@ -15,6 +17,7 @@ public class UserResponse {
     private String role;
     private Long totalXp;
     private Integer level;
+    private LocalDateTime createdAt;
 
     public static UserResponse from(User user) {
         return UserResponse.builder()
@@ -25,6 +28,7 @@ public class UserResponse {
                 .role(user.getRole().name())
                 .totalXp(user.getTotalXp())
                 .level(user.getLevel())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

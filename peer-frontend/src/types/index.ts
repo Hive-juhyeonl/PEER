@@ -140,6 +140,7 @@ export interface Post {
   authorId: number;
   authorName: string;
   likeCount: number;
+  viewCount: number;
   reportCount: number;
   blinded: boolean;
   createdAt: string;

@@ -117,6 +117,7 @@ export default function PostDetailPage() {
   if (!post) return <div className="text-gray-400">Loading...</div>;
 
   const isAuthor = user && user.id === post.authorId;
+  const isAdmin = user?.role === "ADMIN";
 
   const renderComment = (comment: Comment, depth: number = 0) => (
     <div key={comment.id} className={depth > 0 ? "ml-6 mt-2" : ""}>
@@ -240,7 +241,7 @@ export default function PostDetailPage() {
               Edit
             </button>
           )}
-          {isAuthor && (
+          {(isAuthor || isAdmin) && (
             <button
               onClick={() => setShowDeleteModal(true)}
               className={`text-xs text-gray-500 hover:text-red-400 ${!editing ? "" : "ml-auto"}`}

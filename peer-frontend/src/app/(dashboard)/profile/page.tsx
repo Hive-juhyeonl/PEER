@@ -1,9 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [saving, setSaving] = useState(false);
 
   if (!user) return null;
 
@@ -11,6 +17,26 @@ export default function ProfilePage() {
   const xpForCurrentLevel = user.level * user.level * 10;
   const progress =
     ((user.totalXp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
+
+  const startEditing = () => {
+    setName(user.name);
+    setProfileImageUrl(user.profileImageUrl || "");
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await api.put("/api/users/me", { name: name.trim(), profileImageUrl: profileImageUrl.trim() || null });
+      refreshUser();
+      setEditing(false);
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-2xl">
@@ -29,14 +55,61 @@ export default function ProfilePage() {
               {user.name[0]}
             </div>
           )}
-          <div>
+          <div className="flex-1">
             <h2 className="text-xl font-bold text-white">{user.name}</h2>
             <p className="text-gray-400">{user.email}</p>
             <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded mt-1 inline-block">
               {user.role}
             </span>
           </div>
+          {!editing && (
+            <button
+              onClick={startEditing}
+              className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+            >
+              Edit Profile
+            </button>
+          )}
         </div>
+
+        {editing && (
+          <div className="bg-gray-800 rounded-xl p-6 mb-6 space-y-4">
+            <div>
+              <label className="text-sm text-gray-400 mb-1 block">Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 mb-1 block">Profile Image URL</label>
+              <input
+                type="text"
+                value={profileImageUrl}
+                onChange={(e) => setProfileImageUrl(e.target.value)}
+                placeholder="https://example.com/photo.jpg"
+                className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="bg-gray-800 rounded-xl p-6">
           <div className="flex items-center justify-between mb-3">
@@ -67,9 +140,11 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="mt-6 text-xs text-gray-600">
-          Member since {new Date(user.createdAt).toLocaleDateString()}
-        </div>
+        {user.createdAt && (
+          <div className="mt-6 text-xs text-gray-600">
+            Member since {new Date(user.createdAt).toLocaleDateString()}
+          </div>
+        )}
       </div>
     </div>
   );

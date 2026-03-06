@@ -7,6 +7,7 @@ import com.peer.community.dto.PostResponse;
 import com.peer.community.entity.Post;
 import com.peer.community.entity.PostTag;
 import com.peer.community.repository.PostRepository;
+import com.peer.user.entity.Role;
 import com.peer.user.entity.User;
 import com.peer.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,11 +39,13 @@ public class PostService {
                 .map(PostResponse::from);
     }
 
+    @Transactional
     public PostResponse getPost(Long postId) {
         Post post = findPost(postId);
         if (post.isBlinded()) {
             throw new CustomException(ErrorCode.POST_BLINDED);
         }
+        post.incrementViewCount();
         return PostResponse.from(post);
     }
 
@@ -75,7 +78,10 @@ public class PostService {
     @Transactional
     public void deletePost(Long postId, Long userId) {
         Post post = findPost(postId);
-        if (!post.getAuthor().getId().equals(userId)) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        if (!post.getAuthor().getId().equals(userId)
+                && user.getRole() != Role.ADMIN) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
         postRepository.delete(post);

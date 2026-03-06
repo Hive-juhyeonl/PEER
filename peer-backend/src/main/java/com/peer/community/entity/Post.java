@@ -39,6 +39,9 @@ public class Post extends BaseTimeEntity {
     private int reportCount;
 
     @Column(nullable = false)
+    private int viewCount;
+
+    @Column(nullable = false)
     private boolean blinded;
 
     @Builder
@@ -49,7 +52,12 @@ public class Post extends BaseTimeEntity {
         this.content = content;
         this.likeCount = 0;
         this.reportCount = 0;
+        this.viewCount = 0;
         this.blinded = false;
+    }
+
+    public void incrementViewCount() {
+        this.viewCount++;
     }
 
     public void update(PostTag tag, String title, String content) {

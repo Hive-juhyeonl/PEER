@@ -107,6 +107,7 @@ export default function CommunityPage() {
               <span>{post.authorName}</span>
               <span>{new Date(post.createdAt).toLocaleDateString()}</span>
               <span>&#9829; {post.likeCount}</span>
+              <span>Views {post.viewCount}</span>
             </div>
           </Link>
         ))}
